@@ -176,21 +176,21 @@ func (a *App) processMessage(s *discordgo.Session, m *discordgo.MessageCreate) {
 		switch {
 		case violations == 1:
 			t := time.Now().Add(3 * time.Hour)
-			err = s.GuildMemberTimeout(m.GuildID, m.Author.ID, &t)
+			err = s.GuildMemberTimeout(m.GuildID, m.Author.ID, &t, discordgo.WithHeader("X-Audit-Log-Reason", "https://telegra.ph/Ku-chelyad-04-23"))
 			if err != nil {
 				a.log.Error("Failed to timeout user", err, slog.String("guildID", m.GuildID), slog.Uint64("userID", userID), slog.Duration("duration", 3*time.Hour))
 				return
 			}
 			a.log.Warn("User timed out", slog.Uint64("userID", userID), slog.Duration("duration", 3*time.Hour))
 		case violations == 2:
-			err = s.GuildMemberDeleteWithReason(m.GuildID, m.Author.ID, "Не спамь одним и тем же роликом! В следующий раз получишь бан")
+			err = s.GuildMemberDelete(m.GuildID, m.Author.ID, discordgo.WithHeader("X-Audit-Log-Reason", "https://telegra.ph/Ku-chelyad-04-23"))
 			if err != nil {
 				a.log.Error("Failed to kick user", err, slog.String("guildID", m.GuildID), slog.Uint64("userID", userID))
 				return
 			}
 			a.log.Warn("User kicked", slog.Uint64("userID", userID))
 		case violations == 3:
-			err = s.GuildBanCreateWithReason(m.GuildID, m.Author.ID, "Не спамь одним и тем же роликом!", 7)
+			err = s.GuildBanCreate(m.GuildID, m.Author.ID, 7, discordgo.WithHeader("X-Audit-Log-Reason", "https://telegra.ph/Ku-chelyad-04-23"))
 			if err != nil {
 				a.log.Error("Failed to ban user", err, slog.String("guildID", m.GuildID), slog.Uint64("userID", userID))
 				return
