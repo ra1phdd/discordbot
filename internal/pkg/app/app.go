@@ -52,6 +52,9 @@ func New() error {
 		a.log.Error("Failed to auto-migrate models", err)
 		return err
 	}
+	a.db.Model(&models.Video{}).
+		Where("created_at IS NULL OR created_at = ?", time.Time{}).
+		Update("created_at", time.Now().Add(-8*time.Hour))
 
 	a.usersRepo = repository.NewUsers(a.log, a.db)
 	a.videosRepo = repository.NewVideos(a.log, a.db)
@@ -136,9 +139,10 @@ func (a *App) processMessage(s *discordgo.Session, m *discordgo.MessageCreate) {
 	}
 
 	video := models.Video{
-		ID:     videoID,
-		UserID: userID,
-		URL:    matches[1],
+		ID:        videoID,
+		UserID:    userID,
+		URL:       matches[1],
+		CreatedAt: time.Now(),
 	}
 
 	v, err := a.videosRepo.Get(video.UserID, video.URL)
@@ -156,7 +160,7 @@ func (a *App) processMessage(s *discordgo.Session, m *discordgo.MessageCreate) {
 		}
 	}
 
-	if v != nil {
+	if v != nil && time.Now().Sub(v.CreatedAt) < 8*time.Hour {
 		a.log.Warn("Duplicate video detected", slog.Uint64("userID", userID), slog.String("url", video.URL), slog.Int("previous_violations", violations))
 
 		err := a.usersRepo.IncrementViolations(userID)
